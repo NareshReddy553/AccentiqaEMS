@@ -4,9 +4,18 @@ from Account.models import UserPasswords, Users
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
+from Account.services import get_cached_user
+
 
 class UsersSerializer(serializers.ModelSerializer):
+    createduser = serializers.SerializerMethodField()
+    modifieduser = serializers.SerializerMethodField()
 
+    def get_createduser(self, obj):
+        return get_cached_user(obj.createduser_id)
+
+    def get_modifieduser(self, obj):
+        return get_cached_user(obj.modifieduser_id)
     class Meta:
         model = Users
         fields = "__all__"

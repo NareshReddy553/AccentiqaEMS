@@ -1,7 +1,9 @@
-from rest_framework import serializers
+from rest_framework import serializers, status
 
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from Account.services import get_cached_user
+from django.db import transaction
 
 from Employee.models import EmployePasswords, Employees
 
@@ -13,11 +15,20 @@ class EmployePasswordsSerializer(serializers.ModelSerializer):
         
 
 class EmployeesSerializer(serializers.ModelSerializer):
+    createduser = serializers.SerializerMethodField()
+    modifieduser = serializers.SerializerMethodField()
 
+    def get_createduser(self, obj):
+        return get_cached_user(obj.createduser_id)
+
+    def get_modifieduser(self, obj):
+        return get_cached_user(obj.modifieduser_id)
+    
     class Meta:
         model = Employees
         fields = "__all__"
         
+    @transaction.atomic    
     def create(self, validated_data):
         """
         {
@@ -28,15 +39,18 @@ class EmployeesSerializer(serializers.ModelSerializer):
         }
         """
         user=self.context["request"].user
-        validated_data['createduser']=user
-        validated_data['modifieduser']=user
+        validated_data["createduser"] = user
+        validated_data["modifieduser"] = user
         try:
             instance=super().create(validated_data)
+            return instance
             # TODO send email to admin for new emp approval
         except Exception as e:
                 return e
-    
+            
+    @transaction.atomic
     def update(self, instance, validated_data):
+        
         """
         {
             "email":"ng@accentiqa.com",
@@ -53,12 +67,19 @@ class EmployeesSerializer(serializers.ModelSerializer):
         try:
             instance.save()
             # update the password
-            EmployePasswords.objects.create(
-                emp=instance,
-                password=l_password,
-                createduser=user,
-                updateduser=user
-            )
+            emp_pass_qa=EmployePasswords.objects.filter(emp=instance).first()
+            if emp_pass_qa:
+                emp_pass_qa.password=l_password
+                emp_pass_qa.createduser=user
+                emp_pass_qa.modifieduser=user
+                emp_pass_qa.save()
+            else:
+                qs=EmployePasswords.objects.create(
+                    emp=instance,
+                    password=l_password,
+                    createduser=user,
+                    modifieduser=user
+                )
             return instance
         except Exception as e:
             return e

@@ -11,8 +11,8 @@ class Users(models.Model):
     username = models.CharField(unique=True, max_length=100)
     email = models.CharField(unique=True, max_length=100)
     is_active = models.IntegerField()
-    created_datetime = models.DateTimeField(blank=True, null=True)
-    modified_datetime = models.DateTimeField(blank=True, null=True)
+    created_datetime = models.DateTimeField(blank=True, null=True,auto_now_add=True)
+    modified_datetime = models.DateTimeField(blank=True, null=True,auto_now=True)
 
     class Meta:
         managed = False
