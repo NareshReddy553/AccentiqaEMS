@@ -1,7 +1,9 @@
+from datetime import datetime
 from rest_framework import serializers, status
 
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from Account.mailer import send_email
 from Account.services import get_cached_user
 from django.db import transaction
 
@@ -43,8 +45,17 @@ class EmployeesSerializer(serializers.ModelSerializer):
         validated_data["modifieduser"] = user
         try:
             instance=super().create(validated_data)
-            return instance
-            # TODO send email to admin for new emp approval
+            
+            context = {
+            }
+            x = datetime.now().strftime("%x %I:%M %p")
+            subject = f"TFN Recycle Request {x}"
+            send_email(
+                template="index.html",
+                subject=subject,
+                context_data=context,
+                recipient_list=['ngangireddy@accentiqa.com'],
+            )
         except Exception as e:
                 return e
             
@@ -64,6 +75,7 @@ class EmployeesSerializer(serializers.ModelSerializer):
             raise ValidationError({"Error":"Password is required"})
         
         instance.email=validated_data.get('email', instance.email)
+        instance.status=validated_data.get("status",instance.status)
         try:
             instance.save()
             # update the password
