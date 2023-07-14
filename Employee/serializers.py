@@ -46,16 +46,17 @@ class EmployeesSerializer(serializers.ModelSerializer):
         try:
             instance=super().create(validated_data)
             
-            context = {
-            }
-            x = datetime.now().strftime("%x %I:%M %p")
-            subject = f"TFN Recycle Request {x}"
-            send_email(
-                template="index.html",
-                subject=subject,
-                context_data=context,
-                recipient_list=['ngangireddy@accentiqa.com'],
-            )
+            # context = {
+            # }
+            # x = datetime.now().strftime("%x %I:%M %p")
+            # subject = f"TFN Recycle Request {x}"
+            # send_email(
+            #     template="index.html",
+            #     subject=subject,
+            #     context_data=context,
+            #     recipient_list=['ngangireddy@accentiqa.com'],
+            # )
+            return instance
         except Exception as e:
                 return e
             
