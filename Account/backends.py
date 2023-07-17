@@ -19,9 +19,11 @@ class ModelBackend(BaseBackend):
     def authenticate(self, request, username, password, **kwargs) :
         
         try:
+            company=request.headers.get("company")
             user = Users.objects.get(
                 username__iexact=username,
                 is_active=True,
+                company_id=company
             )
         except Users.DoesNotExist:
             return None

@@ -4,6 +4,8 @@ from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from Account.mailer import send_email
+from Account.models import Company, Project
+from Account.serializers import CompanySerializer, ProjectSerializer
 from Account.services import get_cached_user
 from django.db import transaction
 
@@ -19,6 +21,8 @@ class EmployePasswordsSerializer(serializers.ModelSerializer):
 class EmployeesSerializer(serializers.ModelSerializer):
     createduser = serializers.SerializerMethodField()
     modifieduser = serializers.SerializerMethodField()
+    company=CompanySerializer( read_only=True)
+    project=ProjectSerializer( read_only=True)
 
     def get_createduser(self, obj):
         return get_cached_user(obj.createduser_id)
@@ -30,19 +34,28 @@ class EmployeesSerializer(serializers.ModelSerializer):
         model = Employees
         fields = "__all__"
         
+        
     @transaction.atomic    
     def create(self, validated_data):
         """
         {
-            "first_name":"Naresh",
-            "last_name":"Reddy",
-            "phone_number":9398977891,
-            "email:"Naresh.gangireddy@accentiqa.com"
+            "first_name": "Nareqsh",
+            "last_name": "Redqdy",
+            "phone_number": 9398977891,
+            "email": "Naresh.gqangireddy@accentiqa.com",
+            "isbillable": 0,
+            "project": 1,
+            "company": 1
         }
         """
+        company=self.context["request"].data.get("company",None)
+        if not company:
+            raise ValidationError({"error":"company is required in the payload"})
         user=self.context["request"].user
         validated_data["createduser"] = user
         validated_data["modifieduser"] = user
+        validated_data['project']=Project.objects.get(pk=self.context["request"].data.get("project",None))
+        validated_data['company']=Company.objects.get(pk=company)
         try:
             instance=super().create(validated_data)
             
@@ -72,11 +85,14 @@ class EmployeesSerializer(serializers.ModelSerializer):
         """
         user=self.context["request"].user
         l_password = self.initial_data.get("password", None)
-        if l_password is None:
-            raise ValidationError({"Error":"Password is required"})
+        if instance.status==-1:
+            if l_password is None:
+                raise ValidationError({"Error":"Password is required"})
         
         instance.email=validated_data.get('email', instance.email)
         instance.status=validated_data.get("status",instance.status)
+        instance.isbillable=validated_data.get("isbillable",instance.isbillable)
+        instance.project=validated_data.get("project",instance.project)
         try:
             instance.save()
             # update the password

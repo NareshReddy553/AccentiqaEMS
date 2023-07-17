@@ -4,6 +4,23 @@ from django.utils.translation import gettext as _
 # Create your models here.
 
 
+class Company(models.Model):
+    company_id = models.AutoField(primary_key=True)
+    campany_name = models.CharField(unique=True, max_length=100)
+    class Meta:
+        managed = False
+        db_table = 'Company'
+        
+class Project(models.Model):
+    project_id = models.IntegerField(primary_key=True)
+    project_name = models.CharField(max_length=200)
+    is_active = models.IntegerField(blank=True, null=True)
+    company_id = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'Project'
+
 class Users(models.Model):
     user_id = models.AutoField(primary_key=True)
     first_name = models.CharField(max_length=100)
@@ -13,6 +30,7 @@ class Users(models.Model):
     is_active = models.IntegerField()
     created_datetime = models.DateTimeField(blank=True, null=True,auto_now_add=True)
     modified_datetime = models.DateTimeField(blank=True, null=True,auto_now=True)
+    company=models.ForeignKey(Company, on_delete=models.DO_NOTHING,related_name="companyusers")
 
     class Meta:
         managed = False
