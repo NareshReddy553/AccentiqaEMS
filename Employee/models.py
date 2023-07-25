@@ -5,6 +5,8 @@ from Account.models import Company, Users,Project
 
 # Create your models here.
 
+
+
 class Employees(models.Model):
     emp_id = models.AutoField(primary_key=True)
     first_name = models.CharField(max_length=100)
@@ -16,13 +18,15 @@ class Employees(models.Model):
     modifieduser = models.ForeignKey(Users,on_delete=models.DO_NOTHING,related_name="emp_mdfddusr",blank=True, null=True)
     created_datetime = models.DateTimeField(blank=True, null=True,auto_now_add=True)
     modified_datetime = models.DateTimeField(blank=True, null=True,auto_now=True)
-    isbillable = models.BooleanField(db_column='isBillable' ,blank=True, null=True)
     project=models.ForeignKey(Project, on_delete=models.DO_NOTHING,related_name="empprojects")
     company=models.ForeignKey(Company, on_delete=models.DO_NOTHING,related_name="companyemp")
+    dateofjoin = models.DateField(blank=True, null=True)
+    personal_email = models.CharField(max_length=100,)
     class Meta:
         managed = False
         db_table = 'Employees'
         unique_together=["first_name","last_name"]
+        ordering = ["-emp_id"]
 
 
 class EmployePasswords(models.Model):
@@ -38,3 +42,21 @@ class EmployePasswords(models.Model):
     class Meta:
         managed = False
         db_table = 'employe_passwords'
+
+class Salary(models.Model):
+    sal_id = models.AutoField(primary_key=True)
+    salary = models.IntegerField()
+    infracost = models.IntegerField(blank=True, null=True)
+    isbillable = models.BooleanField()
+    startdate = models.DateField()
+    enddate = models.DateField()
+    # emp_id = models.IntegerField()
+    emp=models.ForeignKey(Employees,on_delete=models.DO_NOTHING,related_name="empsal" )
+    createduser = models.ForeignKey(Users,on_delete=models.DO_NOTHING,related_name="sal_crtdusr",blank=True, null=True)
+    modifieduser = models.ForeignKey(Users,on_delete=models.DO_NOTHING,related_name="sal_mdfddusr",blank=True, null=True)
+    createddatetime = models.DateTimeField(blank=True, null=True)
+    modifieddatetime = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'Salary'
