@@ -22,7 +22,7 @@ class EmployeesSerializer(serializers.ModelSerializer):
     createduser = serializers.SerializerMethodField()
     modifieduser = serializers.SerializerMethodField()
     company=CompanySerializer( read_only=True)
-    project=ProjectSerializer( read_only=True)
+    
     salary=serializers.SerializerMethodField()
 
     def get_createduser(self, obj):
@@ -178,11 +178,13 @@ class EmpSalarySerializer(serializers.ModelSerializer):
 class SalarySerializer(serializers.ModelSerializer):
     createduser = serializers.SerializerMethodField()
     modifieduser = serializers.SerializerMethodField()
+    project=ProjectSerializer( read_only=True)
     def get_createduser(self, obj):
         return get_cached_user(obj.createduser_id)
 
     def get_modifieduser(self, obj):
         return get_cached_user(obj.modifieduser_id)
+    
     
     class Meta:
         model = Salary
