@@ -44,7 +44,7 @@ class EmployeesViewset(viewsets.ModelViewSet):
         
         for data in serializer.data.get('salary'):
             enddate=data.get('enddate')
-            if not enddate:
+            if not enddatewadsc:
                 enddate=datetime.today()
             if data['isbillable']:
                 amount=self.__get_total_amount(data.get('startdate',datetime.today()),enddate,data['salary'])
