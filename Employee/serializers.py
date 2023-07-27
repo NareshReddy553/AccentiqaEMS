@@ -63,7 +63,6 @@ class EmployeesSerializer(serializers.ModelSerializer):
         user=self.context["request"].user
         validated_data["createduser"] = user
         validated_data["modifieduser"] = user
-        validated_data['project']=Project.objects.get(pk=self.context["request"].data.get("project",None))
         validated_data['company']=Company.objects.get(pk=company)
         try:
             instance=super().create(validated_data)
@@ -74,29 +73,31 @@ class EmployeesSerializer(serializers.ModelSerializer):
             salary=self.context["request"].data.get("salary",None)
             infra=self.context["request"].data.get("infracost",None)
             billtype=self.context["request"].data.get("isbillable",None)
+            project=self.context["request"].data.get("project",None)
             if salary  and billtype is not None:
                 sal_instance=Salary.objects.create(
                 salary=salary,
                 infracost=infra,
                 isbillable=billtype,
                 startdate=datetime.today(),
-                enddate=datetime.today(),
                 createduser=user,
                 modifieduser=user,
                 createddatetime=datetime.now(),
                 modifieddatetime=datetime.now(),
-                emp=instance
+                emp=instance,
+                project_id=project
                     
                 )
             else:
-                raise ValidationError({"Error":"Salary and billing is required"})
+                raise ValidationError({"Error":"Salary ,project and billing is required"})
             return instance
         except Exception as e:
                 raise ValidationError( e)
             
     @transaction.atomic
     def update(self, instance, validated_data):
-        
+        from rest_framework.utils import model_meta
+        info = model_meta.get_field_info(instance)
         """
         {
             "email":"ng@accentiqa.com",
@@ -106,94 +107,66 @@ class EmployeesSerializer(serializers.ModelSerializer):
         """
         user=self.context["request"].user
         l_password = self.initial_data.get("password", None)
-        if instance.status==-1:
-            if l_password is None:
-                raise ValidationError({"Error":"Password is required"})
-        
-        instance.email=validated_data.get('email', instance.email)
-        instance.status=validated_data.get("status",instance.status)
-        instance.isbillable=validated_data.get("isbillable",instance.isbillable)
-        instance.project=validated_data.get("project",instance.project)
+        m2m_fields = []
+        for attr, value in validated_data.items():
+            if attr in info.relations and info.relations[attr].to_many:
+                m2m_fields.append((attr, value))
+            else:
+                setattr(instance, attr, value)
+        setattr(instance,'modifieduser',user)
+        setattr(instance,'modifieddatetime',datetime.now())
         try:
             instance.save()
-            # update the password
-            emp_pass_qa=EmployePasswords.objects.filter(emp=instance).first()
-            if emp_pass_qa:
-                emp_pass_qa.password=l_password
-                emp_pass_qa.createduser=user
-                emp_pass_qa.modifieduser=user
-                emp_pass_qa.save()
-            else:
-                qs=EmployePasswords.objects.create(
-                    emp=instance,
-                    password=l_password,
-                    createduser=user,
-                    modifieduser=user
-                )
             
-            sal_instance=Salary.objects.filter(emp=instance).order_by("-modifieddatetime")
-            if self.initial_data.get("isbillable",None) is not None:
-                sal_instance=sal_instance.filter(isbillable=self.initial_data.get("isbillable",None))
-                if not sal_instance:
-                    Salary.objects.create(
-                        isbillable=self.initial_data.get("isbillable",None),
-                        salary=self.initial_data.get("isbillable",sal_instance.salary),
-                        infracost=self.initial_data.get('infracost',sal_instance.salary),
-                        startdate=datetime.today(),
-                        createduser_id=user,
-                        modifieduser_id=user,
-                        createddatetime=datetime.now(),
-                        modifieddatetime=datetime.now(),
-                        emp_id=instance
-                        
-                    )
-                    sal_instance=sal_instance.first()
-                    sal_instance.enddate=datetime.today()
-                    sal_instance.save()
+            if instance.status==-1:
+                if l_password is None:
+                    raise ValidationError({"Error":"Password is required"})
+            
+            if l_password:
+                emp_pass_qs=EmployePasswords.objects.filter(emp=instance).first()
+                if emp_pass_qs:
+                    emp_pass_qs.password=l_password
+                    emp_pass_qs.createduser=user
+                    emp_pass_qs.modifieduser=user
+                    emp_pass_qs.save()
                 else:
-                    sal_instance=sal_instance.first()
-                    Salary.objects.create(
-                        isbillable=self.initial_data.get("isbillable",None),
-                        salary=self.initial_data.get("salary",sal_instance.salary),
-                        infracost=self.initial_data.get('infracost',sal_instance.infracost),
-                        startdate=datetime.today(),
+                    qs=EmployePasswords.objects.create(
+                        emp=instance,
+                        password=l_password,
                         createduser=user,
-                        modifieduser=user,
-                        createddatetime=datetime.now(),
-                        modifieddatetime=datetime.now(),
-                        emp=instance
+                        modifieduser=user
                     )
                     
-                    sal_instance.enddate=datetime.today()
-                    sal_instance.save()
-            else:
-                                
-                salary=self.initial_data.get("salary",None)
-                if salary:
-                    Salary.objects.create(
-                            isbillable=self.initial_data.get("isbillable",sal_instance.isbillable),
-                            salary=self.initial_data.get("salary",sal_instance.salary),
-                            infracost=self.initial_data.get('infracost',sal_instance.infracost),
-                            startdate=datetime.today(),
-                            createduser=user,
-                            modifieduser=user,
-                            createddatetime=datetime.now(),
-                            modifieddatetime=datetime.now(),
-                            emp=instance
-                            
-                        )
-                    sal_obj=sal_instance.first()
-                    sal_obj.enddate=datetime.today()
-                    sal_obj.save()
-                else:       
+            # Create or update salary table
+            salary_obj = self.initial_data.get("salary", None)
+            if salary_obj:
+                salary_qs=Salary.objects.filter(emp=instance).order_by("-modifieddatetime").first()
                 
-                    sal_instance=sal_instance.first()
-                    sal_instance.infracost=self.initial_data.get("infracost", sal_instance.infracost)
-                    sal_instance.save()
-                
+                if salary_qs:
+                    salary_dict={}
+                    
+                    salary_dict["createduser"]=user
+                    salary_dict["modifieduser"]=user
+                    salary_dict["createddatetime"]=datetime.now()
+                    salary_dict["modifieddatetime"]=datetime.now()
+                    salary_dict["startdate"]=datetime.today()
+                    salary_dict["emp"]=instance
+                    salary_dict["salary"]=salary_obj.get("salary", salary_qs.salary)
+                    salary_dict["isbillable"]=salary_obj.get("isbillable", salary_qs.isbillable)
+                    salary_dict["infracost"]=salary_obj.get("infracost", salary_qs.infracost)
+                    salary_dict["project_id"]=salary_obj.get("project", salary_qs.project_id)
+                    
+                    Salary.objects.create(**salary_dict)
+                    
+                    salary_qs.enddate=datetime.today()
+                    salary_qs.modifieddatetime=datetime.now()
+                    salary_qs.modifieduser=user
+                    salary_qs.save()
+                    
             return instance
         except Exception as e:
             raise ValidationError(e)
+                    
 
 
 class EmpSalarySerializer(serializers.ModelSerializer):

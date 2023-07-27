@@ -18,7 +18,6 @@ class Employees(models.Model):
     modifieduser = models.ForeignKey(Users,on_delete=models.DO_NOTHING,related_name="emp_mdfddusr",blank=True, null=True)
     created_datetime = models.DateTimeField(blank=True, null=True,auto_now_add=True)
     modified_datetime = models.DateTimeField(blank=True, null=True,auto_now=True)
-    project=models.ForeignKey(Project, on_delete=models.DO_NOTHING,related_name="empprojects")
     company=models.ForeignKey(Company, on_delete=models.DO_NOTHING,related_name="companyemp")
     dateofjoin = models.DateField(blank=True, null=True)
     personal_email = models.CharField(max_length=100,)
@@ -56,6 +55,7 @@ class Salary(models.Model):
     modifieduser = models.ForeignKey(Users,on_delete=models.DO_NOTHING,related_name="sal_mdfddusr",blank=True, null=True)
     createddatetime = models.DateTimeField(blank=True, null=True)
     modifieddatetime = models.DateTimeField(blank=True, null=True)
+    project=models.ForeignKey(Project,on_delete=models.DO_NOTHING,related_name="sal_project",blank=True, null=True)
 
     class Meta:
         managed = False
