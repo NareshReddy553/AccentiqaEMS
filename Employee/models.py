@@ -48,13 +48,13 @@ class Salary(models.Model):
     infracost = models.IntegerField(blank=True, null=True)
     isbillable = models.BooleanField()
     startdate = models.DateField()
-    enddate = models.DateField()
+    enddate = models.DateField(blank=True, null=True)
     # emp_id = models.IntegerField()
     emp=models.ForeignKey(Employees,on_delete=models.DO_NOTHING,related_name="empsal" )
     createduser = models.ForeignKey(Users,on_delete=models.DO_NOTHING,related_name="sal_crtdusr",blank=True, null=True)
     modifieduser = models.ForeignKey(Users,on_delete=models.DO_NOTHING,related_name="sal_mdfddusr",blank=True, null=True)
-    createddatetime = models.DateTimeField(blank=True, null=True)
-    modifieddatetime = models.DateTimeField(blank=True, null=True)
+    createddatetime = models.DateTimeField(blank=True, null=True,auto_now_add=True)
+    modifieddatetime = models.DateTimeField(blank=True, null=True,auto_now=True)
     project=models.ForeignKey(Project,on_delete=models.DO_NOTHING,related_name="sal_project",blank=True, null=True)
 
     class Meta:

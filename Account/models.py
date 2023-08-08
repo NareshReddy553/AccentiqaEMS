@@ -55,4 +55,14 @@ class UserPasswords(models.Model):
 
         
 
+class Companyusers(models.Model):
+    companyuser_id = models.AutoField(primary_key=True)
+    user_id = models.IntegerField()
+    company_id = models.IntegerField()
+    is_active = models.BooleanField(blank=True, null=True,default=True)
+    created_datetime = models.DateTimeField(blank=True, null=True,auto_now_add=True)
+    modified_datetime = models.DateTimeField(blank=True, null=True,auto_now=True)
 
+    class Meta:
+        managed = False
+        db_table = 'CompanyUsers'

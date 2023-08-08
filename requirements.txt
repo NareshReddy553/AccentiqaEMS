@@ -8,3 +8,5 @@ djangorestframework-simplejwt==5.2.2
 mysqlclient==2.1.1
 python-dateutil
 drf-jwt
+pandas
+openpyxl==3.1.2

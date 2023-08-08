@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from Account.models import Company, UserPasswords, Users,Project
+from Account.models import Company, Companyusers, UserPasswords, Users,Project
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
@@ -49,6 +49,12 @@ class UsersSerializer(serializers.ModelSerializer):
         if l_password is None:
             raise ValidationError({"Error":"Password is required"})
         instance=super().create(validated_data)
+        if company:
+            Companyusers.objects.create(
+                user_id=instance.pk,
+                company_id=company
+                
+            )
         UserPasswords.objects.create(
             user=user,
             password=l_password,

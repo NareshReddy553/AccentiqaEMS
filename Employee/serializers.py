@@ -1,11 +1,12 @@
 from datetime import datetime
+import os
 from rest_framework import serializers, status
 
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from Account.mailer import send_email
 from Account.models import Company, Project
-from Account.serializers import CompanySerializer, ProjectSerializer
+from Account.serializers import CompanySerializer, ProjectSerializer, UsersSerializer
 from Account.services import get_cached_user
 from django.db import transaction
 
@@ -73,7 +74,12 @@ class EmployeesSerializer(serializers.ModelSerializer):
             salary=self.context["request"].data.get("salary",None)
             infra=self.context["request"].data.get("infracost",None)
             billtype=self.context["request"].data.get("isbillable",None)
+            if str(billtype).lower=='no' or billtype=='n':
+                billtype=False
+            else:
+                billtype=True
             project=self.context["request"].data.get("project",None)
+            
             if salary  and billtype is not None:
                 sal_instance=Salary.objects.create(
                 salary=salary,
@@ -143,6 +149,11 @@ class EmployeesSerializer(serializers.ModelSerializer):
                 salary_qs=Salary.objects.filter(emp=instance).order_by("-modifieddatetime").first()
                 
                 if salary_qs:
+                    salary_qs.enddate=datetime.today()
+                    salary_qs.modifieddatetime=datetime.now()
+                    salary_qs.modifieduser=user
+                    salary_qs.save()
+                    
                     salary_dict={}
                     
                     salary_dict["createduser"]=user
@@ -158,10 +169,7 @@ class EmployeesSerializer(serializers.ModelSerializer):
                     
                     Salary.objects.create(**salary_dict)
                     
-                    salary_qs.enddate=datetime.today()
-                    salary_qs.modifieddatetime=datetime.now()
-                    salary_qs.modifieduser=user
-                    salary_qs.save()
+                    
                     
             return instance
         except Exception as e:
@@ -170,11 +178,11 @@ class EmployeesSerializer(serializers.ModelSerializer):
 
 
 class EmpSalarySerializer(serializers.ModelSerializer):
-        
+    project=ProjectSerializer( read_only=True)   
     
     class Meta:
         model = Salary
-        fields =  ['sal_id','salary','isbillable','infracost']        
+        fields =  ['sal_id','salary','isbillable','infracost','project']        
 class SalarySerializer(serializers.ModelSerializer):
     createduser = serializers.SerializerMethodField()
     modifieduser = serializers.SerializerMethodField()
@@ -185,7 +193,7 @@ class SalarySerializer(serializers.ModelSerializer):
     def get_modifieduser(self, obj):
         return get_cached_user(obj.modifieduser_id)
     
-    
+  
     class Meta:
         model = Salary
         fields =  "__all__"
@@ -215,3 +223,21 @@ class EmployeesalariesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employees
         fields = "__all__"
+        
+        
+class EmployeestUploadSerializer(serializers.Serializer):
+    file = serializers.FileField()
+
+    def validate_file(self, value):
+        # Add custom validation logic here
+        max_size = 10 * 1024 * 1024  # 10 MB limit
+        allowed_extensions = ['.xlx', '.xlsx']
+        print('-----',value)
+        if value.size > max_size:
+            raise ValidationError("File size exceeds the maximum limit (10 MB).")
+
+        ext = os.path.splitext(value.name)[1]
+        if not ext.lower() in allowed_extensions:
+            raise ValidationError("Invalid file type. Only XLX and XLSX files are allowed.")
+
+        return value

@@ -12,13 +12,23 @@ from django.db.models import Max, Q
 from Account.services import AllRecordsPagination
 from Employee.models import Employees, Salary
 from Employee.serializers import EmpSalarySerializer, EmployeesSerializer, EmployeesalariesSerializer, SalarySerializer
-
+from django.db.models.query import QuerySet
 
 class EmployeesViewset(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     queryset = Employees.objects.all()
     serializer_class = EmployeesSerializer
     pagination_class = AllRecordsPagination
+    
+    def get_queryset(self):
+        company=self.request.headers.get('company',None)
+        if not company :
+            return None 
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            # Ensure queryset is re-evaluated on each request.
+            queryset = queryset.filter(company_id=company).all()
+        return queryset
     
     def __calculte_days(self,startdate,enddate):
         if  isinstance(enddate,str):
@@ -43,8 +53,8 @@ class EmployeesViewset(viewsets.ModelViewSet):
         
         
         for data in serializer.data.get('salary'):
-            enddate=data.get('enddate')
-            if not enddatewadsc:
+            enddate=data.get('enddate') 
+            if not enddate:
                 enddate=datetime.today()
             if data['isbillable']:
                 amount=self.__get_total_amount(data.get('startdate',datetime.today()),enddate,data['salary'])

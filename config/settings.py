@@ -194,3 +194,19 @@ DEFAULT_FROM_EMAIL = "nareshgangireddy71617@gmail.com"
 
 # User cache TTL, in seconds
 USER_CACHE_TTL = 900
+
+EMPLOYEE_EXCEL_FIELD_NAME={
+    "first_name":str,
+    "last_name":str,
+    "phone_number":int,
+    "company":str,
+    "email":str,
+    "personal_email":str,
+    "salary":int,
+    "infracost":int,
+    "isbillable":bool,
+    "project":str
+}
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'

@@ -12,7 +12,7 @@ from rest_framework_simplejwt.authentication import (
     api_settings,
 )
 
-from Account.models import UserPasswords, Users
+from Account.models import Companyusers, UserPasswords, Users
 
 class ModelBackend(BaseBackend):
     
@@ -22,15 +22,16 @@ class ModelBackend(BaseBackend):
             company=request.headers.get("company")
             user = Users.objects.get(
                 username__iexact=username,
-                is_active=True,
-                company_id=company
+                is_active=True
             )
+            companyuser=Companyusers.objects.filter(company_id=company,is_active=True,user_id=user.pk)
         except Users.DoesNotExist:
             return None
 
         if user is None:
             return None
-
+        if not companyuser:
+            None
         # logger.debug("User ID: " + str(user.user_id))
         userPass = (
             UserPasswords.objects.filter(user=user).first()
